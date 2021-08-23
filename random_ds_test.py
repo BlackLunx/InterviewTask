@@ -5,7 +5,7 @@ import pytest
 import typing as tp
 import random, string
 
-from .random_dict import RandomDS
+from .random_ds import RandomDS
 
 def _generate_words(n: int) -> tp.Set[str]:
 
@@ -56,6 +56,9 @@ def test_without_random(t: CaseWithoutRandom) -> None:
     for i, method in enumerate(t.methods):
         assert method(rd, t.values[i]) == t.results[i]
  
+def test_simple_random_empty() -> None:
+    rd = RandomDS()
+    assert rd.get_random() == ""
 
 def test_simple_random_first() -> None:
     rd = RandomDS()
@@ -63,7 +66,7 @@ def test_simple_random_first() -> None:
     rd.add("b")
     rd.erase("a")
     for _ in range(10):
-        assert rd.get_random() == "a"
+        assert rd.get_random() == "b"
 
 def test_simple_random_second() -> None:
     rd = RandomDS()
@@ -95,5 +98,21 @@ def test_big_random() -> None:
     for _ in range(500):
         out_string = rd.get_random()
         assert out_string in words
-    
-    
+
+def bench_function(obj, words):
+    for word in words:
+        obj.add(word)
+    for word in words:
+        obj.erase(word)
+    for word in words:
+        obj.add(word)
+    for word in words:
+        obj.erase(word)
+        obj.get_random()
+
+number_of_words = 100000
+
+@pytest.mark.benchmark(group="User implementation", disable_gc=True, warmup=True, warmup_iterations=10)
+def test_user_implementation(benchmark):
+    words = _generate_words(number_of_words)
+    benchmark.pedantic(bench_function, kwargs = {'obj': RandomDS(), 'words': words}, iterations=10, rounds=5)
